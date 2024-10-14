@@ -11,8 +11,17 @@ from langchain.prompts.prompt import PromptTemplate
 import streamlit as st
 import pandas as pd
 
+from langchain.llms import HuggingFaceHub
 
-PDF_FILES = ['doc_rh.pdf', 'doc_formation.pdf']
+
+PDF_FILES = ['doc_Politiques_Générales et Charte de l’Entreprise.pdf',
+            'DOCUMENT 2 : Gestion des Temps de Travail et Congés.pdf',
+            'DOCUMENT 3 : Sécurité, Santé et Conditions de Travail.pdf',
+            'DOCUMENT 4 : Formation et Développement des Compétences.pdf',
+            'DOCUMENT 5 : Avantages Sociaux et Rémunération.pdf',
+            'DOCUMENT 6 : Gestion des Conflits et Sanctions.pdf',
+            'Procédure de Demande de Congé via l’Outil HoroQuartz.pdf']
+
 PDF_ICON_URL = "https://img.icons8.com/fluency/48/000000/pdf.png"
 OPENAI_API_KEY = os.getenv("OPENIA_API_KEY")
 
@@ -25,8 +34,9 @@ def load_and_split_documents(pdf_files, text_splitter):
         except Exception as e:
             st.error(f"Erreur lors du chargement du fichier {pdf_file}: {str(e)}")
     return all_documents
-
-def setup_qa_chain(db, memory, openai_api_key):
+def setup_llm_OpenAI():
+    return ChatOpenAI(temperature=0.5, openai_api_key=OPENAI_API_KEY)
+def setup_qa_chain(db, memory):
     custom_template = """
     Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question. 
     If you cannot find the answer in the document provided, answer that you can only answer HR questions.
@@ -38,7 +48,7 @@ def setup_qa_chain(db, memory, openai_api_key):
     Standalone question:
     """
     question_prompt = PromptTemplate.from_template(custom_template)
-    llm = ChatOpenAI(temperature=0.5, openai_api_key=openai_api_key)
+    llm = setup_llm_OpenAI()
     return ConversationalRetrievalChain.from_llm(
         llm=llm,
         retriever=db.as_retriever(),
@@ -56,6 +66,8 @@ def display_source_documents(source_documents, pdf_icon_url):
             unique_sources.add(source)
 
 
+
+
 def main():
     load_dotenv()
     st.set_page_config(page_title="MyAssistant", page_icon="")
@@ -66,7 +78,7 @@ def main():
     all_documents = load_and_split_documents(PDF_FILES, text_splitter)
     db = FAISS.from_documents(all_documents, OpenAIEmbeddings(api_key=OPENAI_API_KEY))
     memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True, output_key="answer")
-    qa_chain = setup_qa_chain(db, memory, OPENAI_API_KEY)
+    qa_chain = setup_qa_chain(db, memory)
 
     # Interface utilisateur
     user_query = st.text_input("**How can I help you?**", placeholder="Ask me anything!")
@@ -92,6 +104,5 @@ def main():
     if st.sidebar.button("Reset chat history"):
         st.session_state.messages = []
 
-        
 if __name__ == "__main__":
     main()
