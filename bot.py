@@ -56,13 +56,13 @@ def setup_qa_chain(db, memory):
         condense_question_prompt=question_prompt,
         return_source_documents=True,
     )
-def display_source_documents(source_documents, pdf_icon_url):
+def display_source_documents(source_documents):
     unique_sources = set()
     for idx, doc in enumerate(source_documents):
         source = doc.metadata.get('source', 'N/C')
         if source not in unique_sources:
             st.markdown(f"### Document {idx + 1}")
-            st.markdown(f"![PDF Icon]({pdf_icon_url}) **Source**: {source}")
+            st.markdown(f"![PDF Icon]({PDF_ICON_URL}) **Source**: {source}")
             unique_sources.add(source)
 
 
@@ -98,7 +98,7 @@ def main():
             response = qa_chain({"question": user_query})
             st.session_state.messages.append({"role": "assistant", "content": response["answer"]})
             st.write(response["answer"])
-            display_source_documents(response["source_documents"], PDF_ICON_URL)
+            display_source_documents(response["source_documents"])
 
     # Réinitialisation de l'historique
     if st.sidebar.button("Reset chat history"):
